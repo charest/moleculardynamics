@@ -75,9 +75,9 @@ program md
 
   implicit none
   ! Use either kind function or selected_real_kind
-  integer,parameter :: npartdim = 10 
+  integer,parameter :: npartdim = 4 
   integer,parameter :: natom = 4.d0 * npartdim ** 3
-  integer,parameter :: nstep = 1000
+  integer,parameter :: nstep = 2
   real*8, parameter :: tempK = 10, dt = 1d-3
   integer :: istep
   real*8 :: boxl(3), alat
@@ -95,6 +95,8 @@ program md
   ! For timing analysis
   real*8 :: init_time, start_time, end_time
   integer :: value(8)
+  integer :: seed(8) = (/ 0, 0, 0, 0, 0, 0, 0, 0 /)
+  integer :: s
 
   alat = 2d0 ** (2d0/3d0)
   ! Hint: Array operations
@@ -152,11 +154,12 @@ program md
         end do
      end do
   end do
-
+  
   ! Assign initial random velocities
+  call srand(0)
   do i = 1, natom
      do j = 1, 3
-        vel_t0(i,j) = gasdev()
+        vel_t0(i,j) = mod(i, 2) - 0.5d0 !gasdev()
      end do
   end do
 
@@ -219,7 +222,7 @@ program md
   !=================================================
 
   do istep = 1, nstep
-
+     
      ! Set coordinates, velocity, acceleration and force at next time step to zero
      ! Hint: Use Array properties
      do i = 1, natom
@@ -246,6 +249,7 @@ program md
            endif
         end do
      end do
+    
      
      ! Get force at new atom positions
      ! Using Lennard Jones Potential
@@ -279,6 +283,7 @@ program md
            end do
         end do
      end do
+    
 
      ! Calculate Acceleration and Velocity  at current time step
      do i = 1, natom
@@ -303,6 +308,8 @@ program md
            vel(i,j) = vel(i,j) - vcm(j)
         end do
      end do
+    
+    
 
      ! compute average temperature
      ! See Hint above on calculating average temperature
@@ -327,6 +334,14 @@ program md
            vel_t0(i,j) = vel(i,j) * scale
         end do
      end do
+    
+    if (istep == nstep) then
+        do i = 1, natom
+            write(2,*) vel_t0(i,:)
+        end do
+    endif
+
+    
 
      ! Write current coordinates to xyz file for visualization
      write(1,'(i8)') natom
